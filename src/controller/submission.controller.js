@@ -6,7 +6,6 @@ import Submission from "../model/Submission.model.js";
 import { getHistoryService } from "../services/submission.services.js";
 import { generateAISuggestions,evaluateWithAI } from "../services/ai.services.js";
 import mongoose from "mongoose";
-import redis from "../config/redisClient.config.js";
 
 // For both when submit or retry
 export const submitQuiz = async (req, res) => {
@@ -41,8 +40,6 @@ export const submitQuiz = async (req, res) => {
       quiz.totalQuestions
     );
 
-    await redis.del(`history:${userId}:*`);
-    await redis.del(`oldsubmissions:${userId}:${quizId}`);
 
     res.json({
       message: "Submission saved",
@@ -55,15 +52,8 @@ export const submitQuiz = async (req, res) => {
 
 export const getHistory = async (req, res) => {
   try {
-    const cacheKey = `history:${req.user.id}:${JSON.stringify(req.query)}`;
-
-    const cached = await redis.get(cacheKey);
-    if (cached) {
-      return res.status(200).json({ success: true, submissions: JSON.parse(cached) });
-    }
-
+    
     const submissions = await getHistoryService(req.query, req.user.id);
-    await redis.setex(cacheKey, 600, JSON.stringify(submissions));
 
     res.status(200).json({ success: true, submissions });
   } catch (err) {
@@ -86,12 +76,6 @@ export const oldSubmissions = async (req, res) => {
       return res.status(400).json({ message: "Invalid ObjectId format" });
     }
 
-    const cacheKey = `oldsubmissions:${userId}:${quizId}`;
-    const cached = await redis.get(cacheKey);
-
-    if (cached) {
-      return res.status(200).json({ success: true, submissions: JSON.parse(cached) });
-    }
     
     const submissions = await Submission.find({
       user: userId,
@@ -101,8 +85,6 @@ export const oldSubmissions = async (req, res) => {
     if (!submissions.length) {
       return res.status(404).json({ message: "No submissions found" });
     }
-
-    await redis.setex(cacheKey, 600, JSON.stringify(submissions));
 
     res.status(200).json({ success: true, submissions });
   } catch (err) {
