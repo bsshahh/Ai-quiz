@@ -9,9 +9,9 @@ const doc = {
     title: 'My API',
     description: 'Description'
   },
-  host: 'https://ai-quiz-production-a28f.up.railway.app',
+  host: 'ai-quiz-production-a28f.up.railway.app',
   basePath: "/api",
-  schemes:["http"]
+  schemes:["https"]
 };
 
 const outputFile = './swagger-output.json';
