@@ -3,7 +3,7 @@ import dotenv from "dotenv";
 dotenv.config();
 const redis = new Redis({
   socket: {
-    host: process.env.REDISHOST,
+    host: 123,
     port: process.env.REDISPORT
   },
   password: process.env.REDIS_PASSWORD         
