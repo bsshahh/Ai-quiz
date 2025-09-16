@@ -1,7 +1,6 @@
 import Quiz from "../model/Quiz.model.js";
 import { generateHint } from "../services/ai.services.js";
 import { generateAIQuiz } from "../services/quizAI.services.js";
-import redis from "../config/redisClient.config.js";
 
 export const createAIQuiz = async (req, res) => {
   try {
@@ -28,8 +27,6 @@ export const createAIQuiz = async (req, res) => {
     });
 
     await quiz.save();
-
-    await redis.del("quizzes:all");
 
     const sanitizedQuiz = quiz.toObject();
     sanitizedQuiz.questions = sanitizedQuiz.questions.map((q) => {
@@ -58,19 +55,12 @@ export const getQuizzes = async (req, res) => {
     if (req.query.subject) filters.subject = req.query.subject;
     if (req.query.difficulty) filters.difficulty = req.query.difficulty;
 
-    const cacheKey = "quizzes:all:" + JSON.stringify(filters);
-
-    //Try cache first
-    const cached = await redis.get(cacheKey);
-    if (cached) {
-      return res.json(JSON.parse(cached));
-    }
+  
 
     const quizzes = await Quiz.find(filters)
       .sort({ createdAt: -1 })
       .select("-questions.answer");
 
-    await redis.setex(cacheKey, 300, JSON.stringify(quizzes));
 
     res.json(quizzes);
   } catch (err) {
@@ -82,13 +72,6 @@ export const getQuizzes = async (req, res) => {
 // GET /quizzes/:id
 export const getQuizById = async (req, res) => {
   try {
-    const cacheKey = `quiz:${req.params.id}`;
-
-    //Try cache first
-    const cached = await redis.get(cacheKey);
-    if (cached) {
-      return res.json(JSON.parse(cached));
-    }
 
     const quiz = await Quiz.findById(req.params.id).select("-questions.answer");
     if (!quiz) return res.status(404).json({ message: "Quiz not found" });
@@ -97,8 +80,6 @@ export const getQuizById = async (req, res) => {
       const { answer, ...rest } = q;
       return rest;
     });
-
-    await redis.setex(cacheKey, 600, JSON.stringify(sanitizedQuiz));
 
     res.json(sanitizedQuiz);
   } catch (err) {
