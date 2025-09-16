@@ -9,7 +9,7 @@ const doc = {
     title: 'My API',
     description: 'Description'
   },
-  host: 'localhost:5500',
+  host: 'https://ai-quiz-production-a28f.up.railway.app',
   basePath: "/api",
   schemes:["http"]
 };
